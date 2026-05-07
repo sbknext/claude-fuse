@@ -1,0 +1,27 @@
+{
+  "name": "claude-fuse",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first observability layer for Claude Code sessions — mistake auto-detection + skill discovery.",
+  "workspaces": [
+    "api",
+    "collector",
+    "dashboard"
+  ],
+  "scripts": {
+    "start": "concurrently --names \"api,dashboard\" --prefix-colors \"cyan,magenta\" \"npm run dev:api\" \"npm run dev:dashboard\"",
+    "setup": "npm install && npm run migrate && echo 'Setup complete. Run: npm start (api + dashboard) then npm run backfill -- --since 30d'",
+    "dev:api": "npm run -w api dev",
+    "dev:dashboard": "npm run -w dashboard dev",
+    "build:dashboard": "npm run -w dashboard build",
+    "test": "npm test --workspaces --if-present",
+    "migrate": "npm run -w api migrate",
+    "backfill": "npm run -w collector backfill --"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
