@@ -1,0 +1,17 @@
+node_modules/
+.next/
+dist/
+build/
+coverage/
+data/metadata.db
+data/metadata.db-*
+data/sessions/
+*.db
+*.db-journal
+*.jsonl
+# but keep the parser-test fixture
+!collector/tests/fixtures/sample.jsonl
+.env
+.env.local
+.DS_Store
+*.log
