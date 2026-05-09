@@ -1,0 +1,28 @@
+{
+  "name": "claude-fuse-collector",
+  "version": "0.1.0",
+  "description": "Capture layer for claude-fuse: backfill, live hooks, installer.",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "claude-fuse-backfill": "./bin/claude-fuse-backfill.js",
+    "claude-fuse-hook": "./bin/claude-fuse-hook.js",
+    "claude-fuse-collector": "./bin/claude-fuse-collector.js"
+  },
+  "scripts": {
+    "backfill": "node bin/claude-fuse-backfill.js",
+    "install-hooks": "node bin/claude-fuse-collector.js install",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "commander": "^12.0.0"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.9",
+    "@vitest/utils": "^4.1.5",
+    "vitest": "^2.1.9"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
