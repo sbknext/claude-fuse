@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/api-client";
 import { EventTimeline } from "@/components/EventTimeline";
-import { formatDate, relativeTime } from "@/lib/utils";
+import { relativeTime } from "@/lib/utils";
+import { normalizeProject, compactNumber } from "@/lib/format";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -8,6 +9,13 @@ export const dynamic = "force-dynamic";
 interface Props {
   params: Promise<{ id: string }>;
 }
+
+// Severity badge (issue 5)
+const SEVERITY_BADGE: Record<string, string> = {
+  high: "bg-red-600 text-white",
+  medium: "bg-amber-500 text-gray-900",
+  low: "bg-blue-600 text-white",
+};
 
 export default async function SessionDetailPage({ params }: Props) {
   const { id } = await params;
@@ -30,6 +38,8 @@ export default async function SessionDetailPage({ params }: Props) {
     );
   }
 
+  const showCost = session.total_cost_usd > 0;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -42,9 +52,22 @@ export default async function SessionDetailPage({ params }: Props) {
       <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-3">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-lg font-semibold font-mono">{session.id}</h1>
-            <div className="flex items-center gap-3 mt-1 text-sm text-gray-600 dark:text-gray-300">
-              {session.project && <span>{session.project}</span>}
+            {/* Issue 12: clear h1 */}
+            <h1
+              className="text-base font-semibold font-mono tracking-tight"
+              title={session.id}
+            >
+              {session.id.slice(0, 8)}
+              <span className="text-gray-400 dark:text-gray-500">
+                {session.id.slice(8)}
+              </span>
+            </h1>
+            <div className="flex items-center gap-3 mt-1 text-sm text-gray-600 dark:text-gray-300 flex-wrap">
+              {session.project && (
+                <span title={session.project}>
+                  {normalizeProject(session.project)}
+                </span>
+              )}
               {session.branch && (
                 <span className="font-mono text-xs bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded">
                   {session.branch}
@@ -65,21 +88,37 @@ export default async function SessionDetailPage({ params }: Props) {
           </span>
         </div>
 
+        {/* cwd — show normalized, tooltip shows full */}
         {session.cwd && (
-          <p className="text-xs font-mono text-gray-500 dark:text-gray-400 break-all">
-            cwd: {session.cwd}
+          <p
+            className="text-xs font-mono text-gray-500 dark:text-gray-400 break-all"
+            title={session.cwd}
+          >
+            cwd: {normalizeProject(session.cwd)}
           </p>
         )}
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <Stat label="Started" value={relativeTime(session.started_at)} />
+          <Stat
+            label="Started"
+            value={relativeTime(session.started_at)}
+            tooltip={new Date(session.started_at).toISOString()}
+          />
           <Stat
             label="Ended"
             value={
               session.ended_at ? relativeTime(session.ended_at) : "ongoing"
             }
+            tooltip={
+              session.ended_at
+                ? new Date(session.ended_at).toISOString()
+                : undefined
+            }
           />
-          <Stat label="Tool calls" value={String(session.total_tool_calls)} />
+          <Stat
+            label="Tool calls"
+            value={compactNumber(session.total_tool_calls)}
+          />
           <Stat
             label="Mistakes"
             value={String(session.mistakes?.length ?? 0)}
@@ -87,16 +126,21 @@ export default async function SessionDetailPage({ params }: Props) {
           />
           <Stat
             label="Input tokens"
-            value={session.total_input_tokens.toLocaleString()}
+            value={compactNumber(session.total_input_tokens)}
+            tooltip={session.total_input_tokens.toLocaleString()}
           />
           <Stat
             label="Output tokens"
-            value={session.total_output_tokens.toLocaleString()}
+            value={compactNumber(session.total_output_tokens)}
+            tooltip={session.total_output_tokens.toLocaleString()}
           />
-          <Stat
-            label="Cost"
-            value={`$${session.total_cost_usd.toFixed(4)}`}
-          />
+          {/* Issue 4: hide cost when 0 */}
+          {showCost && (
+            <Stat
+              label="Cost"
+              value={`$${session.total_cost_usd.toFixed(4)}`}
+            />
+          )}
           <Stat label="Events" value={String(session.events?.length ?? 0)} />
         </div>
       </div>
@@ -122,21 +166,21 @@ export default async function SessionDetailPage({ params }: Props) {
                 key={m.id}
                 className="text-sm border border-gray-200 dark:border-gray-700 rounded p-3"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span
                     className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                      m.severity === "high"
-                        ? "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"
-                        : m.severity === "medium"
-                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400"
-                        : "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
+                      SEVERITY_BADGE[m.severity] ??
+                      "bg-gray-200 text-gray-700"
                     }`}
                   >
                     {m.severity.toUpperCase()}
                   </span>
                   <span className="font-mono font-semibold">{m.pattern}</span>
-                  <span className="text-gray-400 text-xs ml-auto">
-                    {formatDate(m.detected_at)}
+                  <span
+                    className="text-gray-400 text-xs ml-auto"
+                    title={new Date(m.detected_at).toISOString()}
+                  >
+                    {relativeTime(m.detected_at)}
                   </span>
                 </div>
               </div>
@@ -152,13 +196,15 @@ function Stat({
   label,
   value,
   highlight,
+  tooltip,
 }: {
   label: string;
   value: string;
   highlight?: boolean;
+  tooltip?: string;
 }) {
   return (
-    <div className="bg-white dark:bg-gray-700/50 rounded p-2">
+    <div className="bg-white dark:bg-gray-700/50 rounded p-2" title={tooltip}>
       <div className="text-gray-500 dark:text-gray-400 uppercase tracking-wide text-xs">
         {label}
       </div>

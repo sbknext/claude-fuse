@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { AutoRefresh } from "@/components/AutoRefresh";
 
 export const metadata: Metadata = {
   title: "claude-fuse",
@@ -16,10 +17,20 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
-        <div className="flex min-h-screen">
-          {/* Sidebar */}
-          <nav className="w-48 shrink-0 border-r border-gray-200 dark:border-gray-700 p-4 flex flex-col gap-1">
-            <div className="font-mono font-bold text-base mb-4 text-blue-600 dark:text-blue-400">
+        <AutoRefresh intervalMs={30_000} />
+        <div className="flex flex-col md:flex-row min-h-screen">
+          {/* Sidebar — collapses to top tab bar on mobile */}
+          <nav className="
+            shrink-0 border-b md:border-b-0 md:border-r
+            border-gray-200 dark:border-gray-700
+            p-3 md:p-4
+            flex flex-row md:flex-col
+            items-center md:items-stretch
+            gap-1 md:gap-1
+            md:w-48
+            overflow-x-auto
+          ">
+            <div className="font-mono font-bold text-base md:mb-4 mr-4 md:mr-0 text-blue-600 dark:text-blue-400 shrink-0">
               claude-fuse
             </div>
             <NavLink href="/">Sessions</NavLink>
@@ -34,7 +45,7 @@ export default function RootLayout({
               <ThemeToggle />
             </header>
 
-            <main className="flex-1 p-6 overflow-auto">{children}</main>
+            <main className="flex-1 p-4 md:p-6 overflow-auto">{children}</main>
           </div>
         </div>
       </body>
@@ -52,7 +63,7 @@ function NavLink({
   return (
     <Link
       href={href}
-      className="block px-3 py-2 rounded text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+      className="block px-3 py-2 rounded text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors whitespace-nowrap"
     >
       {children}
     </Link>

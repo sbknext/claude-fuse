@@ -33,6 +33,34 @@ export function formatDate(epochMs: number): string {
 }
 
 /**
+ * Short date+time for table cells. Today/yesterday → time only.
+ * Older → "MMM DD HH:MM" (e.g. "May 11 14:30").
+ */
+export function shortDateTime(epochMs: number): string {
+  const d = new Date(epochMs);
+  const now = new Date();
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday =
+    d.getFullYear() === yesterday.getFullYear() &&
+    d.getMonth() === yesterday.getMonth() &&
+    d.getDate() === yesterday.getDate();
+  const time = d.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  if (sameDay) return `today ${time}`;
+  if (isYesterday) return `yest ${time}`;
+  const md = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return `${md} ${time}`;
+}
+
+/**
  * Short session id (first 8 chars)
  */
 export function shortId(id: string): string {

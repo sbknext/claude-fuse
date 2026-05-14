@@ -1,11 +1,27 @@
 import type { Event, Mistake } from "@/lib/types";
-import { formatDate, SEVERITY_COLORS } from "@/lib/utils";
+import { relativeTime } from "@/lib/utils";
+import { parseDetailsJson } from "@/lib/format";
 
 const TYPE_ICON: Record<string, string> = {
   user_msg: "→",
   assistant_msg: "←",
   tool_use: "⚙",
   tool_result: "✓",
+};
+
+// Left-border color by event type (issue 11)
+const TYPE_BORDER: Record<string, string> = {
+  user_msg: "border-l-2 border-blue-400 dark:border-blue-500",
+  assistant_msg: "border-l-2 border-gray-300 dark:border-gray-600",
+  tool_use: "border-l-2 border-purple-400 dark:border-purple-500",
+  tool_result: "border-l-2 border-green-400 dark:border-green-600",
+};
+
+// Severity badge colors (solid pills)
+const SEVERITY_BADGE: Record<string, string> = {
+  high: "bg-red-600 text-white",
+  medium: "bg-amber-500 text-gray-900",
+  low: "bg-blue-600 text-white",
 };
 
 interface Props {
@@ -36,17 +52,25 @@ export function EventTimeline({ events, mistakes }: Props) {
     <ol className="space-y-1">
       {events.map((ev) => {
         const eventMistakes = mistakesByEvent.get(ev.id) ?? [];
+        const borderClass =
+          TYPE_BORDER[ev.type] ?? "border-l-2 border-gray-200 dark:border-gray-700";
         return (
-          <li key={ev.id} className="text-sm">
+          <li
+            key={ev.id}
+            className={`text-sm pl-2 ${borderClass}`}
+          >
             <div className="flex items-start gap-2 py-1">
-              <span className="shrink-0 text-gray-400 font-mono text-xs w-5 text-center">
+              <span className="shrink-0 text-gray-400 font-mono text-xs w-4 text-center">
                 {TYPE_ICON[ev.type] ?? "•"}
               </span>
-              <span className="shrink-0 font-mono text-xs text-gray-400 whitespace-nowrap">
-                {formatDate(ev.ts)}
+              <span
+                className="shrink-0 font-mono text-xs text-gray-400 whitespace-nowrap"
+                title={new Date(ev.ts).toISOString()}
+              >
+                {relativeTime(ev.ts)}
               </span>
               {ev.tool_name && (
-                <span className="shrink-0 font-mono text-xs bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300">
+                <span className="shrink-0 font-mono text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded">
                   {ev.tool_name}
                 </span>
               )}
@@ -63,32 +87,30 @@ export function EventTimeline({ events, mistakes }: Props) {
               )}
             </div>
             {eventMistakes.length > 0 && (
-              <div className="ml-7 space-y-1 mb-1">
-                {eventMistakes.map((m) => (
-                  <div
-                    key={m.id}
-                    className={`text-xs rounded px-2 py-1 ${
-                      SEVERITY_COLORS[m.severity] ??
-                      "text-gray-600 bg-gray-50"
-                    }`}
-                  >
-                    <span className="font-semibold">[{m.severity}]</span>{" "}
-                    {m.pattern}
-                    {m.details_json && (
-                      <span className="ml-1 opacity-75">
-                        —{" "}
-                        {(() => {
-                          try {
-                            const d = JSON.parse(m.details_json);
-                            return d.message ?? JSON.stringify(d).slice(0, 80);
-                          } catch {
-                            return m.details_json.slice(0, 80);
-                          }
-                        })()}
+              <div className="ml-6 space-y-1 mb-1">
+                {eventMistakes.map((m) => {
+                  const details = parseDetailsJson(m.details_json, 2, 80);
+                  return (
+                    <div
+                      key={m.id}
+                      className="text-xs rounded px-2 py-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                    >
+                      <span
+                        className={`inline-block text-xs font-bold px-1.5 py-0.5 rounded-full mr-1.5 ${
+                          SEVERITY_BADGE[m.severity] ?? "bg-gray-200 text-gray-700"
+                        }`}
+                      >
+                        {m.severity.toUpperCase()}
                       </span>
-                    )}
-                  </div>
-                ))}
+                      <span className="font-mono font-semibold">{m.pattern}</span>
+                      {details.length > 0 && (
+                        <span className="ml-1.5 text-gray-500 dark:text-gray-400">
+                          — {details.map(d => `${d.key}: ${d.value}`).join(" · ")}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </li>

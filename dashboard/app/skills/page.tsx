@@ -6,16 +6,18 @@ export const dynamic = "force-dynamic";
 export default async function SkillsPage() {
   const skills = await getSkills(100);
 
-  // Sort by frequency desc (API should already do this, but ensure client-side too)
+  // Sort by frequency desc
   const sorted = [...skills].sort((a, b) => b.frequency - a.frequency);
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold">Skill Candidates</h1>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
-          {skills.length} candidate{skills.length !== 1 ? "s" : ""}
-        </span>
+      {/* Page header — issue 12 */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">Skill Candidates</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <span className="font-semibold text-gray-800 dark:text-gray-100">{skills.length}</span>{" "}
+          candidate{skills.length !== 1 ? "s" : ""} — recurring tool sequences ready to promote
+        </p>
       </div>
 
       {sorted.length === 0 ? (
@@ -24,6 +26,10 @@ export default async function SkillsPage() {
           <p className="text-sm">
             Skill candidates appear when the same tool sequence (3–6 tools) recurs
             across ≥3 sessions with frequency ≥5. Run{" "}
+            <code className="font-mono bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+              npm run seed:demo
+            </code>{" "}
+            or{" "}
             <code className="font-mono bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
               npm run backfill -- --since 30d
             </code>{" "}

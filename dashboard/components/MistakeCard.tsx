@@ -3,11 +3,56 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { Mistake } from "@/lib/types";
-import { relativeTime, shortId, SEVERITY_COLORS } from "@/lib/utils";
+import { relativeTime, shortId } from "@/lib/utils";
+import { normalizeProject, parseDetailsJson } from "@/lib/format";
 import { PromoteButton } from "./PromoteButton";
+
+// Severity badge: solid colored pill, dark-mode aware
+const SEVERITY_BADGE: Record<string, string> = {
+  high: "bg-red-600 text-white dark:bg-red-600 dark:text-white",
+  medium: "bg-amber-500 text-gray-900 dark:bg-amber-500 dark:text-gray-900",
+  low: "bg-blue-600 text-white dark:bg-blue-600 dark:text-white",
+};
 
 interface Props {
   mistake: Mistake;
+}
+
+function CopyableSessionId({ id }: { id: string }) {
+  const [copied, setCopied] = useState(false);
+  function copy() {
+    navigator.clipboard.writeText(id).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }
+  return (
+    <span className="inline-flex items-center gap-1">
+      <Link
+        href={`/sessions/${id}`}
+        title={id}
+        className="text-blue-500 hover:underline font-mono"
+      >
+        session:{shortId(id)}
+      </Link>
+      <button
+        onClick={copy}
+        title={copied ? "Copied!" : "Copy full ID"}
+        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs transition-colors"
+      >
+        {copied ? "✓" : "⧉"}
+      </button>
+    </span>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <>
+      <dt className="text-gray-500 dark:text-gray-400 whitespace-nowrap">{label}:</dt>
+      <dd className="text-gray-700 dark:text-gray-300 break-all truncate" title={value}>{value}</dd>
+    </>
+  );
 }
 
 export function MistakeCard({ mistake }: Props) {
@@ -15,15 +60,7 @@ export function MistakeCard({ mistake }: Props) {
     mistake.ledger_entry_id
   );
 
-  let detailsPreview = "";
-  if (mistake.details_json) {
-    try {
-      const d = JSON.parse(mistake.details_json);
-      detailsPreview = d.message ?? JSON.stringify(d).slice(0, 120);
-    } catch {
-      detailsPreview = mistake.details_json.slice(0, 120);
-    }
-  }
+  const details = parseDetailsJson(mistake.details_json);
 
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-2">
@@ -31,8 +68,8 @@ export function MistakeCard({ mistake }: Props) {
         <div className="flex items-center gap-2 flex-wrap">
           <span
             className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-              SEVERITY_COLORS[mistake.severity] ??
-              "text-gray-600 bg-gray-100"
+              SEVERITY_BADGE[mistake.severity] ??
+              "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
             }`}
           >
             {mistake.severity.toUpperCase()}
@@ -46,30 +83,34 @@ export function MistakeCard({ mistake }: Props) {
             </span>
           )}
         </div>
-        <span className="text-xs text-gray-400 whitespace-nowrap shrink-0">
+        <span
+          className="text-xs text-gray-400 whitespace-nowrap shrink-0"
+          title={new Date(mistake.detected_at).toISOString()}
+        >
           {relativeTime(mistake.detected_at)}
         </span>
       </div>
 
-      <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-        <Link
-          href={`/sessions/${mistake.session_id}`}
-          className="text-blue-500 hover:underline font-mono"
-        >
-          session:{shortId(mistake.session_id)}
-        </Link>
+      <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
+        <CopyableSessionId id={mistake.session_id} />
         {mistake.session?.project && (
-          <span>{mistake.session.project}</span>
+          <span title={mistake.session.project}>
+            {normalizeProject(mistake.session.project)}
+          </span>
         )}
         {mistake.session?.branch && (
-          <span className="font-mono">{mistake.session.branch}</span>
+          <span className="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded">
+            {mistake.session.branch}
+          </span>
         )}
       </div>
 
-      {detailsPreview && (
-        <p className="text-xs text-gray-600 dark:text-gray-400 font-mono bg-gray-50 dark:bg-gray-800 rounded px-2 py-1 break-all">
-          {detailsPreview}
-        </p>
+      {details.length > 0 && (
+        <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 text-xs font-mono bg-gray-50 dark:bg-gray-800 rounded px-2 py-1.5">
+          {details.map(({ key, value }) => (
+            <DetailRow key={key} label={key} value={value} />
+          ))}
+        </dl>
       )}
 
       <div className="pt-1">
