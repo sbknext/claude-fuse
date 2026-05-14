@@ -21,21 +21,54 @@ router.get('/', (req, res) => {
     conditions.push('m.pattern = ?');
     params.push(req.query.pattern);
   }
+  if (req.query.severity) {
+    conditions.push('m.severity = ?');
+    params.push(req.query.severity);
+  }
+  if (req.query.session_id) {
+    conditions.push('m.session_id = ?');
+    params.push(req.query.session_id);
+  }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
-  const rows = db
-    .prepare(
-      `SELECT m.*, s.project, s.branch, s.user
-       FROM mistakes m
-       JOIN sessions s ON s.id = m.session_id
-       ${where}
-       ORDER BY m.detected_at DESC
-       LIMIT 200`
-    )
-    .all(...params);
+  // Pagination
+  const perPage = Math.min(parseInt(req.query.per_page, 10) || 50, 200);
+  const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+  const offset = (page - 1) * perPage;
 
-  res.json({ mistakes: rows, count: rows.length });
+  // Legacy limit support
+  const legacyLimit = req.query.limit !== undefined
+    ? Math.min(parseInt(req.query.limit, 10) || 200, 500)
+    : null;
+
+  const baseSelect = `
+    SELECT m.*, s.project, s.branch, s.user
+    FROM mistakes m
+    JOIN sessions s ON s.id = m.session_id
+    ${where}
+    ORDER BY m.detected_at DESC`;
+
+  let rows;
+  let total;
+
+  if (legacyLimit !== null) {
+    rows = db.prepare(`${baseSelect} LIMIT ?`).all(...params, legacyLimit);
+    total = rows.length;
+  } else {
+    const countRow = db
+      .prepare(`SELECT COUNT(*) AS n FROM mistakes m JOIN sessions s ON s.id = m.session_id ${where}`)
+      .get(...params);
+    total = countRow.n;
+    rows = db.prepare(`${baseSelect} LIMIT ? OFFSET ?`).all(...params, perPage, offset);
+  }
+
+  res.json({
+    mistakes: rows,
+    count: total,
+    page: legacyLimit !== null ? 1 : page,
+    per_page: legacyLimit !== null ? total : perPage,
+  });
 });
 
 router.post('/:id/promote', (req, res) => {

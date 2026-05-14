@@ -40,14 +40,56 @@ async function apiFetch<T>(
 
 // Sessions
 
+export interface GetSessionsParams {
+  page?: number;
+  per_page?: number;
+  project?: string;
+  status?: "active" | "completed" | "crashed" | "";
+  q?: string;
+  /** Legacy: if set, bypasses pagination and returns raw list */
+  limit?: number;
+}
+
+export interface SessionsPage {
+  sessions: Session[];
+  count: number;
+  page: number;
+  per_page: number;
+}
+
 export async function getSessions(
-  limit = 50,
+  limitOrParams: number | GetSessionsParams = 50,
   project?: string
 ): Promise<Session[]> {
-  const qs = new URLSearchParams({ limit: String(limit) });
-  if (project) qs.set("project", project);
-  const result = await apiFetch<{ sessions: Session[]; count: number }>(`/sessions?${qs}`);
+  // Backward-compat: old callers pass (limit, project?)
+  const qs = new URLSearchParams();
+  if (typeof limitOrParams === "number") {
+    qs.set("limit", String(limitOrParams));
+    if (project) qs.set("project", project);
+  } else {
+    const p = limitOrParams;
+    if (p.limit !== undefined) qs.set("limit", String(p.limit));
+    if (p.page !== undefined) qs.set("page", String(p.page));
+    if (p.per_page !== undefined) qs.set("per_page", String(p.per_page));
+    if (p.project) qs.set("project", p.project);
+    if (p.status) qs.set("status", p.status);
+    if (p.q) qs.set("q", p.q);
+  }
+  const result = await apiFetch<SessionsPage>(`/sessions?${qs}`);
   return result?.sessions ?? [];
+}
+
+export async function getSessionsPage(
+  params: GetSessionsParams = {}
+): Promise<SessionsPage> {
+  const qs = new URLSearchParams();
+  if (params.page !== undefined) qs.set("page", String(params.page));
+  if (params.per_page !== undefined) qs.set("per_page", String(params.per_page));
+  if (params.project) qs.set("project", params.project);
+  if (params.status) qs.set("status", params.status);
+  if (params.q) qs.set("q", params.q);
+  const result = await apiFetch<SessionsPage>(`/sessions?${qs}`);
+  return result ?? { sessions: [], count: 0, page: 1, per_page: 20 };
 }
 
 export async function getSession(id: string): Promise<SessionDetail | null> {
@@ -63,20 +105,43 @@ export async function getSession(id: string): Promise<SessionDetail | null> {
 export interface GetMistakesParams {
   reviewed?: "0" | "1" | "";
   severity?: "low" | "medium" | "high" | "";
+  pattern?: string;
+  session_id?: string;
+  page?: number;
+  per_page?: number;
+  /** Legacy: bypasses pagination */
   limit?: number;
+}
+
+export interface MistakesPage {
+  mistakes: Mistake[];
+  count: number;
+  page: number;
+  per_page: number;
 }
 
 export async function getMistakes(
   params: GetMistakesParams = {}
 ): Promise<Mistake[]> {
+  const result = await getMistakesPage(params);
+  return result.mistakes;
+}
+
+export async function getMistakesPage(
+  params: GetMistakesParams = {}
+): Promise<MistakesPage> {
   const qs = new URLSearchParams();
   if (params.reviewed !== undefined && params.reviewed !== "")
     qs.set("reviewed", params.reviewed);
   if (params.severity !== undefined && params.severity !== "")
     qs.set("severity", params.severity);
+  if (params.pattern) qs.set("pattern", params.pattern);
+  if (params.session_id) qs.set("session_id", params.session_id);
+  if (params.page !== undefined) qs.set("page", String(params.page));
+  if (params.per_page !== undefined) qs.set("per_page", String(params.per_page));
   if (params.limit !== undefined) qs.set("limit", String(params.limit));
-  const result = await apiFetch<{ mistakes: Mistake[]; count: number }>(`/mistakes?${qs}`);
-  return result?.mistakes ?? [];
+  const result = await apiFetch<MistakesPage>(`/mistakes?${qs}`);
+  return result ?? { mistakes: [], count: 0, page: 1, per_page: 50 };
 }
 
 export async function promoteMistake(
