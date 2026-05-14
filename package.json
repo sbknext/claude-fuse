@@ -16,7 +16,8 @@
     "build:dashboard": "npm run -w dashboard build",
     "test": "npm test --workspaces --if-present",
     "migrate": "npm run -w api migrate",
-    "backfill": "npm run -w collector backfill --"
+    "backfill": "npm run -w collector backfill --",
+    "seed:demo": "node scripts/seed-demo.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.0.0"

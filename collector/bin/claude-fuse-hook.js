@@ -52,6 +52,7 @@ function normalizePayload(eventName, rawInput) {
     Stop:              'assistant_msg',
   };
   const type = typeMap[eventName] || 'tool_use';
+  const isStopEvent = eventName === 'Stop';
 
   // Extract tool name and summary from hook payload
   const toolName = hookData.tool_name || hookData.toolName || null;
@@ -70,8 +71,10 @@ function normalizePayload(eventName, rawInput) {
     branch: hookData.branch || null,
     cwd: hookData.cwd || null,
     started_at: now,
-    ended_at: null,
-    status: 'active',
+    // For Stop events the session has ended; for all others keep null so the
+    // API marks the session as still-active (ended_at = null → "● live" dot).
+    ended_at: isStopEvent ? now : null,
+    status: isStopEvent ? 'completed' : 'active',
     total_cost_usd: 0,
     total_input_tokens: 0,
     total_output_tokens: 0,

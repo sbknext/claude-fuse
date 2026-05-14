@@ -30,6 +30,9 @@ function ensureJsonlPath(sessionId, startedAt) {
   return join(dir, `${sessionId}.jsonl`);
 }
 
+// Event types that indicate a session has ended (Stop hook payload)
+const SESSION_END_TYPES = new Set(['assistant_msg', 'session_end', 'stop']);
+
 router.post('/', (req, res) => {
   const { source, session, events = [], raw_jsonl_chunk } = req.body;
 
@@ -38,6 +41,28 @@ router.post('/', (req, res) => {
   if (!session || !session.id) return res.status(400).json({ error: 'session.id required' });
   if (!session.user) return res.status(400).json({ error: 'session.user required' });
   if (!session.started_at) return res.status(400).json({ error: 'session.started_at required' });
+
+  // For hook-source sessions, determine if this is a Stop (session-end) payload.
+  // The hook script sets type='assistant_msg' for the Stop event.
+  const isHookSource = source === 'hook';
+  const hasStopEvent = isHookSource && events.some(e => SESSION_END_TYPES.has(e.type));
+
+  // Resolve ended_at:
+  //   - backfill: use whatever the payload says
+  //   - hook, non-Stop event: always null (session still in progress)
+  //   - hook, Stop event: use payload value if provided, else Date.now()
+  let resolvedEndedAt = session.ended_at ?? null;
+  if (isHookSource) {
+    if (hasStopEvent) {
+      resolvedEndedAt = session.ended_at ?? Date.now();
+    } else {
+      resolvedEndedAt = null;
+    }
+  }
+
+  const resolvedStatus = isHookSource
+    ? (hasStopEvent ? 'completed' : 'active')
+    : (session.status ?? 'active');
 
   const db = getDb();
 
@@ -72,12 +97,12 @@ router.post('/', (req, res) => {
         session.branch ?? null,
         session.cwd ?? null,
         session.started_at,
-        session.ended_at ?? null,
+        resolvedEndedAt,
         session.total_cost_usd ?? 0,
         session.total_input_tokens ?? 0,
         session.total_output_tokens ?? 0,
         session.total_tool_calls ?? 0,
-        session.status ?? 'active',
+        resolvedStatus,
         relJsonlPath,
         source
       );
