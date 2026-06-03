@@ -12,6 +12,7 @@ import { getDb, withTx } from '../db.js';
 import { runAllDetectors } from '../detectors/index.js';
 import { analyzeSkillNgrams } from '../analyzers/skill_ngram.js';
 import { dispatch as dispatchAlerts } from '../alerts/dispatcher.js';
+import { extractTokensFromLines, upsertSessionTokens } from '../analytics/tokens.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -178,6 +179,26 @@ router.post('/', (req, res) => {
       dispatchAlerts(mistakeRows).catch((err) => {
         console.warn('[ingest] alert dispatch error (non-fatal):', err.message);
       });
+    }
+
+    // Extract tokens from raw JSONL chunk (best-effort, never blocks response)
+    // Only run if session_tokens table exists (migration 003 applied)
+    try {
+      const tokenTableExists = db
+        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='session_tokens'")
+        .get();
+      if (tokenTableExists && raw_jsonl_chunk) {
+        const lines = raw_jsonl_chunk
+          .split('\n')
+          .filter(l => l.trim())
+          .map(l => { try { return JSON.parse(l); } catch { return null; } })
+          .filter(Boolean);
+        const extracted = extractTokensFromLines(lines, session.id);
+        upsertSessionTokens(db, session.id, extracted);
+      }
+    } catch (err) {
+      // Non-fatal — token extraction must never block ingest
+      console.warn('[ingest] token extraction error (non-fatal):', err.message);
     }
 
     res.json({

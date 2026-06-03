@@ -48,5 +48,14 @@ if (currentVersion < 2) {
   console.log(`Schema already at version ${currentVersion} (>= 2). Skipping 002.`);
 }
 
+if (currentVersion < 3) {
+  const sql = readFileSync(join(__dirname, '003_session_tokens.sql'), 'utf8');
+  db.exec(sql);
+  console.log('Migration 003 applied (session_tokens table).');
+  currentVersion = 3;
+} else {
+  console.log(`Schema already at version ${currentVersion} (>= 3). Skipping 003.`);
+}
+
 console.log(`DB at: ${dbPath} — schema version: ${currentVersion}`);
 db.close();

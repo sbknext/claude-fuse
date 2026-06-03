@@ -37,6 +37,7 @@ export default function RootLayout({
             <NavLink href="/mistakes">Mistakes</NavLink>
             <NavLink href="/skills">Skills</NavLink>
             <NavLink href="/alerts">Alerts</NavLink>
+            <NavLink href="/cost">Cost</NavLink>
           </nav>
 
           {/* Main */}

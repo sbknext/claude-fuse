@@ -8,6 +8,7 @@ import type {
   AlertLogEntry,
   SkillStubResponse,
   SkillStubEntry,
+  TokenAnalyticsResponse,
 } from "./types";
 
 const BASE_URL =
@@ -201,4 +202,10 @@ export async function getSkillStubs(): Promise<SkillStubEntry[]> {
     "/skills/stubs"
   );
   return result?.stubs ?? [];
+}
+
+// Token + cost analytics (Story 1.5.7)
+
+export async function getTokenAnalytics(): Promise<TokenAnalyticsResponse | null> {
+  return apiFetch<TokenAnalyticsResponse>("/analytics/tokens");
 }

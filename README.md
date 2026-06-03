@@ -176,7 +176,7 @@ claude-fuse/
 ### Phase 2 (next)
 - Embeddings + semantic skill clustering
 - Ingest dedup via JSONL checksum
-- Cost dashboard (per-session, per-day, per-project)
+- ✅ Cost dashboard (per-session, per-day, per-project) — shipped in 1.5.7
 - Project-name normaliser
 
 ### Phase 3+

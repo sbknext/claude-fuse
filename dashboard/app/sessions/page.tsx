@@ -189,6 +189,7 @@ function SessionsInner() {
                 <th className="py-2 px-3">Project</th>
                 <th className="py-2 px-3">Branch</th>
                 <th className="py-2 px-3">Started</th>
+                <th className="py-2 px-3 text-center" title="Input↑ Output↓ tokens. Unknown = token fields absent from JSONL.">Tokens</th>
                 <th className="py-2 px-3 text-center">Tools</th>
                 <th className="py-2 px-3 text-center">Mistakes</th>
                 <th className="py-2 px-3">Status</th>

@@ -14,6 +14,31 @@ export function getApiUrl() {
 }
 
 /**
+ * POST to /analytics/tokens/reextract for a single session.
+ * Returns { ok, status, body }.
+ */
+export async function reextractTokens(sessionId, rawJsonl, timeoutMs = 30000) {
+  const apiUrl = getApiUrl();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${apiUrl}/analytics/tokens/reextract`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, raw_jsonl: rawJsonl }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    const body = await res.text().catch(() => '');
+    return { ok: res.ok, status: res.status, body };
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') throw new Error(`Request timed out after ${timeoutMs}ms`);
+    throw err;
+  }
+}
+
+/**
  * Create a POST function for /ingest with the given timeout.
  * @param {number} timeoutMs
  * @returns {async function(payload): { ok, status, body }}

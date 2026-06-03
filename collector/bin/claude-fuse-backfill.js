@@ -13,7 +13,7 @@ import path from 'path';
 import os from 'os';
 import { parseSince, parseFile, scanAllProjects } from '../src/jsonl-parser.js';
 import { batchAndSend } from '../src/batcher.js';
-import { makePostFn } from '../src/api-client.js';
+import { makePostFn, reextractTokens } from '../src/api-client.js';
 
 program
   .name('claude-fuse-backfill')
@@ -21,6 +21,7 @@ program
   .option('--since <period>', 'How far back to scan. E.g. 30d, 7d, 24h, or ISO date.', '30d')
   .option('--dry-run', 'Print plan without POSTing', false)
   .option('--projects-dir <dir>', 'Override ~/.claude/projects directory')
+  .option('--re-extract-tokens', 'Re-extract token counts from JSONL files for existing sessions (Story 1.5.7 backfill)', false)
   .parse(process.argv);
 
 const opts = program.opts();
@@ -55,6 +56,30 @@ async function main() {
       if (opts.dryRun) {
         console.log(`[dry-run] ${path.basename(filePath)} — session ${session.id}, ${events.length} events, project=${session.project}`);
         totalEvents += events.length;
+        continue;
+      }
+
+      if (opts.reExtractTokens) {
+        // Token re-extraction mode: send raw JSONL to /analytics/tokens/reextract
+        // idempotent upsert — safe to run multiple times
+        const rawChunk = rawLines.join('\n');
+        try {
+          const result = await reextractTokens(session.id, rawChunk);
+          if (result.ok) {
+            console.log(`  [tokens] ${path.basename(filePath)} — session ${session.id}`);
+          } else {
+            // 404 = session not ingested yet; skip silently (run backfill first)
+            if (result.status === 404) {
+              console.log(`  [tokens-skip] ${path.basename(filePath)} — session not yet ingested, run backfill first`);
+            } else {
+              console.error(`  [tokens-error] ${path.basename(filePath)}: HTTP ${result.status} ${result.body}`);
+              totalErrors++;
+            }
+          }
+        } catch (err) {
+          console.error(`  [tokens-error] ${path.basename(filePath)}: ${err.message}`);
+          totalErrors++;
+        }
         continue;
       }
 

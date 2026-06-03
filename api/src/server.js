@@ -6,6 +6,7 @@ import mistakesRouter from './routes/mistakes.js';
 import skillsRouter from './routes/skills.js';
 import adminRouter from './routes/admin.js';
 import alertsRouter from './routes/alerts.js';
+import analyticsRouter from './routes/analytics.js';
 
 const app = express();
 const PORT = parseInt(process.env.CLAUDE_FUSE_API_PORT || '5457', 10);
@@ -28,6 +29,7 @@ app.use('/mistakes', mistakesRouter);
 app.use('/skills', skillsRouter);
 app.use('/admin', adminRouter);
 app.use('/alerts', alertsRouter);
+app.use('/analytics', analyticsRouter);
 
 // Health
 app.get('/health', (_req, res) => res.json({ status: 'ok', port: PORT }));

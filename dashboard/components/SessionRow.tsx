@@ -43,6 +43,43 @@ function CopyableId({ id }: { id: string }) {
   );
 }
 
+/** Format token counts for the sessions table.
+ * Shows "unknown" when both are 0 and the session has events (token field likely absent).
+ */
+function TokensCell({ session }: { session: Session }) {
+  const inp = session.total_input_tokens ?? 0;
+  const out = session.total_output_tokens ?? 0;
+
+  // Both zero with events suggests tokens weren't captured (older format / hook-only session)
+  const eventCount = session.event_count ?? 0;
+  const likelyUnknown = inp === 0 && out === 0 && eventCount > 0;
+
+  if (likelyUnknown) {
+    return (
+      <span
+        className="text-xs text-gray-400 dark:text-gray-500"
+        title="Token counts not available for this session — re-run backfill to extract"
+      >
+        unknown
+      </span>
+    );
+  }
+
+  if (inp === 0 && out === 0) {
+    return <span className="text-xs text-gray-400">—</span>;
+  }
+
+  return (
+    <span
+      className="font-mono text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap"
+      title="Estimated cost: see Cost tab. Prompt cache hits reduce actual cost — this is a best-effort estimate."
+    >
+      {compactNumber(inp)}↑{" "}
+      {compactNumber(out)}↓
+    </span>
+  );
+}
+
 export function SessionRow({ session }: { session: Session }) {
   return (
     <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
@@ -78,6 +115,9 @@ export function SessionRow({ session }: { session: Session }) {
         ) : (
           <span className="text-green-600 dark:text-green-400 font-medium">● live</span>
         )}
+      </td>
+      <td className="py-2 px-3 text-center">
+        <TokensCell session={session} />
       </td>
       <td className="py-2 px-3 text-center text-sm font-mono">
         {compactNumber(session.total_tool_calls)}

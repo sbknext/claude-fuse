@@ -1,0 +1,79 @@
+[
+  {
+    "model": "claude-opus-4-5",
+    "input_per_million": 15.00,
+    "output_per_million": 75.00,
+    "source": "https://www.anthropic.com/pricing",
+    "last_updated": "2026-06-01"
+  },
+  {
+    "model": "claude-sonnet-4-5",
+    "input_per_million": 3.00,
+    "output_per_million": 15.00,
+    "source": "https://www.anthropic.com/pricing",
+    "last_updated": "2026-06-01"
+  },
+  {
+    "model": "claude-sonnet-4-6",
+    "input_per_million": 3.00,
+    "output_per_million": 15.00,
+    "source": "https://www.anthropic.com/pricing",
+    "last_updated": "2026-06-01"
+  },
+  {
+    "model": "claude-haiku-4-5",
+    "input_per_million": 0.80,
+    "output_per_million": 4.00,
+    "source": "https://www.anthropic.com/pricing",
+    "last_updated": "2026-06-01"
+  },
+  {
+    "model": "claude-opus-4",
+    "input_per_million": 15.00,
+    "output_per_million": 75.00,
+    "source": "https://www.anthropic.com/pricing",
+    "last_updated": "2026-06-01"
+  },
+  {
+    "model": "claude-sonnet-4",
+    "input_per_million": 3.00,
+    "output_per_million": 15.00,
+    "source": "https://www.anthropic.com/pricing",
+    "last_updated": "2026-06-01"
+  },
+  {
+    "model": "claude-haiku-4",
+    "input_per_million": 0.80,
+    "output_per_million": 4.00,
+    "source": "https://www.anthropic.com/pricing",
+    "last_updated": "2026-06-01"
+  },
+  {
+    "model": "claude-3-opus-20240229",
+    "input_per_million": 15.00,
+    "output_per_million": 75.00,
+    "source": "https://www.anthropic.com/pricing",
+    "last_updated": "2026-06-01"
+  },
+  {
+    "model": "claude-3-5-sonnet-20241022",
+    "input_per_million": 3.00,
+    "output_per_million": 15.00,
+    "source": "https://www.anthropic.com/pricing",
+    "last_updated": "2026-06-01"
+  },
+  {
+    "model": "claude-3-5-haiku-20241022",
+    "input_per_million": 0.80,
+    "output_per_million": 4.00,
+    "source": "https://www.anthropic.com/pricing",
+    "last_updated": "2026-06-01"
+  },
+  {
+    "model": "claude-3-haiku-20240307",
+    "input_per_million": 0.25,
+    "output_per_million": 1.25,
+    "source": "https://www.anthropic.com/pricing",
+    "last_updated": "2026-06-01"
+  }
+]

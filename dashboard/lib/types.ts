@@ -99,3 +99,51 @@ export interface AlertLogEntry {
   message: string;
   success: 0 | 1;
 }
+
+// Token + cost analytics (Story 1.5.7)
+
+export interface SessionTokens {
+  session_id: string;
+  input_tokens: number | null;   // null = "unknown" — never fabricated
+  output_tokens: number | null;  // null = "unknown" — never fabricated
+  model: string | null;
+  estimated_cost_usd: number | null; // null when tokens unknown; labelled "est." in UI
+  extraction_note: string;
+  extracted_at: number;
+}
+
+export interface WeeklyTokenTotals {
+  total_input: number;
+  total_output: number;
+  total_cost: number; // est.
+  session_count: number;
+  unknown_count: number;
+}
+
+export interface DailyTokenBreakdown {
+  date: string;       // YYYY-MM-DD
+  input_tokens: number;
+  output_tokens: number;
+  estimated_cost: number; // est.
+  session_count: number;
+}
+
+export interface TopTokenSession {
+  session_id: string;
+  project: string | null;
+  branch: string | null;
+  started_at: number;
+  input_tokens: number;
+  output_tokens: number;
+  model: string | null;
+  estimated_cost_usd: number | null; // est.
+  extraction_note: string;
+}
+
+export interface TokenAnalyticsResponse {
+  weekly: WeeklyTokenTotals;
+  daily: DailyTokenBreakdown[];
+  top_sessions: TopTokenSession[];
+  cost_label: "est.";
+  cost_note: string;
+}
