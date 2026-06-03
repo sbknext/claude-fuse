@@ -75,6 +75,21 @@ export interface PromoteSkillResponse {
   description: string;
 }
 
+export interface SkillStubResponse {
+  success: boolean;
+  path: string;
+  filename: string;
+  markdown: string;
+  ai_used: boolean;
+}
+
+export interface SkillStubEntry {
+  filename: string;
+  path: string;
+  size_bytes: number;
+  created_at: number; // epoch ms
+}
+
 export interface AlertLogEntry {
   id: number;
   session_id: string;

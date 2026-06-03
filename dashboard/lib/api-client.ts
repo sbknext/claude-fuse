@@ -6,6 +6,8 @@ import type {
   PromoteMistakeResponse,
   PromoteSkillResponse,
   AlertLogEntry,
+  SkillStubResponse,
+  SkillStubEntry,
 } from "./types";
 
 const BASE_URL =
@@ -180,4 +182,23 @@ export async function getRecentAlerts(limit = 20): Promise<AlertLogEntry[]> {
     `/alerts/recent?limit=${limit}`
   );
   return result?.alerts ?? [];
+}
+
+// Skill stubs
+
+export async function generateSkillStub(
+  id: number,
+  withAi = false
+): Promise<SkillStubResponse | null> {
+  return apiFetch<SkillStubResponse>(
+    `/skills/${id}/stub${withAi ? "?ai=true" : ""}`,
+    { method: "POST" }
+  );
+}
+
+export async function getSkillStubs(): Promise<SkillStubEntry[]> {
+  const result = await apiFetch<{ stubs: SkillStubEntry[]; count: number }>(
+    "/skills/stubs"
+  );
+  return result?.stubs ?? [];
 }

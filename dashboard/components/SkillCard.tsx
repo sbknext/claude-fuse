@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { SkillCandidate } from "@/lib/types";
 import { relativeTime } from "@/lib/utils";
-import { promoteSkill } from "@/lib/api-client";
+import { promoteSkill, generateSkillStub } from "@/lib/api-client";
 
 interface Props {
   skill: SkillCandidate;
@@ -17,6 +17,17 @@ export function SkillCard({ skill }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+
+  // Stub state
+  const [stubLoading, setStubLoading] = useState(false);
+  const [stubMarkdown, setStubMarkdown] = useState<string | null>(null);
+  const [stubPath, setStubPath] = useState<string | null>(null);
+  const [stubAiUsed, setStubAiUsed] = useState(false);
+  const [stubError, setStubError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  // Show "Explain stub (AI)" button when NEXT_PUBLIC_CLAUDE_FUSE_AI_KEY_SET=1 is set.
+  // Set this in .env.local when CLAUDE_FUSE_AI_API_KEY is configured server-side.
+  const hasAiKey = process.env.NEXT_PUBLIC_CLAUDE_FUSE_AI_KEY_SET === "1";
 
   let toolSequence: string[] = [];
   try {
@@ -32,6 +43,36 @@ export function SkillCard({ skill }: Props) {
       : [];
   } catch {
     exampleSessions = [];
+  }
+
+  async function handleGenerateStub(withAi = false) {
+    setStubLoading(true);
+    setStubError(null);
+    try {
+      const res = await generateSkillStub(skill.id, withAi);
+      if (res && res.success) {
+        setStubMarkdown(res.markdown);
+        setStubPath(res.path);
+        setStubAiUsed(res.ai_used);
+      } else {
+        setStubError("Stub generation failed — API unavailable");
+      }
+    } catch (e) {
+      setStubError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setStubLoading(false);
+    }
+  }
+
+  async function handleCopyStub() {
+    if (!stubMarkdown) return;
+    try {
+      await navigator.clipboard.writeText(stubMarkdown);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setCopied(false);
+    }
   }
 
   async function handlePromote() {
@@ -89,6 +130,59 @@ export function SkillCard({ skill }: Props) {
       <p className="font-mono text-xs text-gray-400 break-all">
         sig: {skill.signature.slice(0, 16)}…
       </p>
+
+      {/* ── Stub section ── */}
+      <div className="pt-1 space-y-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => handleGenerateStub(false)}
+            disabled={stubLoading}
+            className="text-xs px-2 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          >
+            {stubLoading ? "Generating…" : "Generate stub"}
+          </button>
+          {hasAiKey && (
+            <button
+              onClick={() => handleGenerateStub(true)}
+              disabled={stubLoading}
+              className="text-xs px-2 py-1 rounded bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50 transition-colors"
+            >
+              {stubLoading ? "…" : "Explain stub (AI)"}
+            </button>
+          )}
+        </div>
+
+        {stubError && (
+          <p className="text-xs text-red-500">{stubError}</p>
+        )}
+
+        {stubMarkdown && (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-indigo-700 dark:text-indigo-400">
+                Stub generated {stubAiUsed && <span className="text-teal-600 dark:text-teal-400">(AI fields included)</span>}
+              </span>
+              <button
+                onClick={handleCopyStub}
+                className="text-xs px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                {copied ? "Copied!" : "Copy to clipboard"}
+              </button>
+            </div>
+            {stubPath && (
+              <p className="font-mono text-xs text-gray-400 break-all">
+                saved: {stubPath}
+              </p>
+            )}
+            <pre className="text-xs bg-gray-50 dark:bg-gray-800 rounded p-2 overflow-auto max-h-48 border border-gray-200 dark:border-gray-700 whitespace-pre-wrap break-words">
+              {stubMarkdown}
+            </pre>
+            <p className="text-xs text-yellow-600 dark:text-yellow-400">
+              CANDIDATE — edit this file before using as a real skill.
+            </p>
+          </div>
+        )}
+      </div>
 
       {promoted ? (
         <div className="text-xs text-green-600 dark:text-green-400 font-medium">
