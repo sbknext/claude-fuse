@@ -2,9 +2,10 @@
 
 import { Suspense, useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { getMistakesPage, type MistakesPage } from "@/lib/api-client";
+import Link from "next/link";
+import { getMistakesPage, getRecentAlerts, type MistakesPage } from "@/lib/api-client";
 import { MistakeCard } from "@/components/MistakeCard";
-import type { Mistake } from "@/lib/types";
+import type { Mistake, AlertLogEntry } from "@/lib/types";
 
 const PATTERNS = [
   "failed_bash_retry",
@@ -35,6 +36,7 @@ function MistakesInner() {
 
   const [data, setData] = useState<MistakesPage | null>(null);
   const [loading, setLoading] = useState(true);
+  const [recentAlerts, setRecentAlerts] = useState<AlertLogEntry[]>([]);
 
   const applyParams = useCallback(
     (updates: Record<string, string>) => {
@@ -48,6 +50,11 @@ function MistakesInner() {
     },
     [router, pathname, searchParams]
   );
+
+  // Load recent alerts for badge
+  useEffect(() => {
+    getRecentAlerts(5).then((alerts) => setRecentAlerts(alerts));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,7 +97,19 @@ function MistakesInner() {
     <div>
       {/* Header */}
       <div className="mb-5">
-        <h1 className="text-2xl font-bold tracking-tight">Mistakes</h1>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <h1 className="text-2xl font-bold tracking-tight">Mistakes</h1>
+          {recentAlerts.length > 0 && (
+            <Link
+              href="/alerts"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-300 dark:border-orange-700 rounded-full px-2.5 py-1 hover:bg-orange-200 dark:hover:bg-orange-800/40 transition-colors"
+              title="Recent real-time alerts (candidate detections)"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse inline-block" />
+              {recentAlerts.length} alert{recentAlerts.length !== 1 ? "s" : ""}
+            </Link>
+          )}
+        </div>
         {data && (
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex flex-wrap gap-2 items-center">
             <span>

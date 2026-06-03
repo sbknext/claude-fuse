@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 import { getDb, withTx } from '../db.js';
 import { runAllDetectors } from '../detectors/index.js';
 import { analyzeSkillNgrams } from '../analyzers/skill_ngram.js';
+import { dispatch as dispatchAlerts } from '../alerts/dispatcher.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -171,6 +172,13 @@ router.post('/', (req, res) => {
 
     // Run n-gram analyzer
     skillCandidatesTouched = analyzeSkillNgrams(db, session.id, allEvents);
+
+    // Fire-and-forget alert dispatch — outside transaction, never blocks response
+    if (mistakeRows.length > 0) {
+      dispatchAlerts(mistakeRows).catch((err) => {
+        console.warn('[ingest] alert dispatch error (non-fatal):', err.message);
+      });
+    }
 
     res.json({
       session_id: session.id,

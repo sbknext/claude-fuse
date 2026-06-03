@@ -74,3 +74,13 @@ export interface PromoteSkillResponse {
   name: string;
   description: string;
 }
+
+export interface AlertLogEntry {
+  id: number;
+  session_id: string;
+  pattern: string;
+  channel: string;
+  sent_at: number; // epoch ms
+  message: string;
+  success: 0 | 1;
+}

@@ -36,6 +36,7 @@ export default function RootLayout({
             <NavLink href="/">Sessions</NavLink>
             <NavLink href="/mistakes">Mistakes</NavLink>
             <NavLink href="/skills">Skills</NavLink>
+            <NavLink href="/alerts">Alerts</NavLink>
           </nav>
 
           {/* Main */}

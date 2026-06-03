@@ -23,18 +23,30 @@ const versionTableExists = db
   .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='schema_version'")
   .get();
 
+let currentVersion = 0;
+
 if (versionTableExists) {
   const row = db.prepare('SELECT MAX(version) as v FROM schema_version').get();
-  if (row && row.v >= 1) {
-    console.log(`Schema already at version ${row.v}. No-op.`);
-    db.close();
-    process.exit(0);
-  }
+  currentVersion = (row && row.v) ? row.v : 0;
 }
 
-const sqlPath = join(__dirname, '001_initial.sql');
-const sql = readFileSync(sqlPath, 'utf8');
+if (currentVersion < 1) {
+  const sql = readFileSync(join(__dirname, '001_initial.sql'), 'utf8');
+  db.exec(sql);
+  console.log('Migration 001 applied.');
+  currentVersion = 1;
+} else {
+  console.log(`Schema already at version ${currentVersion} (>= 1). Skipping 001.`);
+}
 
-db.exec(sql);
-console.log(`Migration applied. DB at: ${dbPath}`);
+if (currentVersion < 2) {
+  const sql = readFileSync(join(__dirname, '002_alert_log.sql'), 'utf8');
+  db.exec(sql);
+  console.log('Migration 002 applied (alert_log table).');
+  currentVersion = 2;
+} else {
+  console.log(`Schema already at version ${currentVersion} (>= 2). Skipping 002.`);
+}
+
+console.log(`DB at: ${dbPath} — schema version: ${currentVersion}`);
 db.close();

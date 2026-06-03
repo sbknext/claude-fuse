@@ -5,6 +5,7 @@ import type {
   SkillCandidate,
   PromoteMistakeResponse,
   PromoteSkillResponse,
+  AlertLogEntry,
 } from "./types";
 
 const BASE_URL =
@@ -170,4 +171,13 @@ export async function promoteSkill(
     method: "POST",
     body: JSON.stringify({ name, description }),
   });
+}
+
+// Alerts
+
+export async function getRecentAlerts(limit = 20): Promise<AlertLogEntry[]> {
+  const result = await apiFetch<{ alerts: AlertLogEntry[]; count: number }>(
+    `/alerts/recent?limit=${limit}`
+  );
+  return result?.alerts ?? [];
 }
