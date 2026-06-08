@@ -1,3 +1,13 @@
+/**
+ * claude-fuse API server
+ *
+ * Express app that receives Claude Code session data (ingest), exposes session /
+ * mistake / skill / alert / analytics endpoints, and serves a health check.
+ *
+ * Port: CLAUDE_FUSE_API_PORT env var (default 5457).
+ * CORS is intentionally permissive — dashboard runs on a different local port.
+ * Set CLAUDE_FUSE_NO_LISTEN=1 to suppress `listen()` during tests.
+ */
 import 'dotenv/config';
 import express from 'express';
 import ingestRouter from './routes/ingest.js';
